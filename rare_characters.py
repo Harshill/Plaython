@@ -13,4 +13,4 @@ print(''.join(character for character in characters if mess[0].count(character) 
 
 OCCURRENCES = {}
 for c in mess[0]: OCCURRENCES[c] = OCCURRENCES.get(c, 0) + 1
-print(''.join([c for c in mess[0] if OCCURRENCES[c] < 5]))
+print(''.join([c for c in mess[0] if OCCURRENCES[c] < 5])) 

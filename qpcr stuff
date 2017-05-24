@@ -1,0 +1,21 @@
+
+    
+def for_groups(sequence, size):
+    return (sequence[pos:pos + size] for pos in range(0, len(sequence), size))
+
+with open('that.csv') as f:
+    content = f.readlines()
+print(content)
+
+for i, string in enumerate(content):
+    if content[i].isnumeric():
+        content[i] = float(string.replace('\n', ''))
+    else:
+        content[i] = string.replace('\n', '')
+
+for line in for_groups(content, 8):
+    [print(value, '\t', end='') for value in line]
+    print()
+
+
+#that.csv is just a csv file that has all the values in a single column

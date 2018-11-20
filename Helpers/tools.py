@@ -1,5 +1,6 @@
 import numpy as np
-from itertools import product
+from itertools import product, zip_longest
+from collections import Counter
 
 
 def get_window(iterable, size, offset=0):
@@ -91,6 +92,14 @@ def get_neighbouring_indices(row_idx, col_idx, matrix_shape):
             col_indices.append(col_idx + x)
 
     return row_indices, col_indices
+
+
+def all_unique(items):
+    return len(set(items)) == len(items)
+
+
+def is_anagram(str1, str2):
+    return Counter(str1) == Counter(str2)
 
 
 if __name__ == '__main__':

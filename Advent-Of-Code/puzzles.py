@@ -1,7 +1,9 @@
 import numpy as np
-from itertools import chain, cycle
-from Helpers.tools import get_window, ceil_odd, odd_number_gen, even_number_gen, get_neighbouring_indices
+from itertools import chain, cycle, product
+from Helpers.tools import (get_window, ceil_odd, odd_number_gen, even_number_gen,
+                           get_neighbouring_indices, all_unique, is_anagram)
 
+dir = '/home/harshil/GithubProjects/Plaython/'
 
 def sum_similar(digit_seq, offset=1):
     """
@@ -209,6 +211,71 @@ class Spiral():
             max_sum = self.spiral.max()
 
         return int(max_sum)
+
+
+def count_passphrase_integrity(filepath):
+    """
+    Given a list of sentence count how many of the sentences use words that are not anagrams
+    I can do a letter count for each word then do a pairwise comparison of dictionaries for sentence
+
+    However the pairwise comparisons may take long and makes the code less readable
+
+    Instead I sort each word and count how many sentences have unique words after sorting
+
+    :param filepath:
+    :return:
+    """
+    with open(filepath) as infile:
+        def sort_words(list_of_words):
+            return tuple(''.join(sorted(word)) for word in list_of_words)
+
+        return sum(all_unique(sort_words(line.strip().split())) for line in infile)
+
+
+class WackyInstructions():
+    """
+    Given a list of indices to visit on the input list itself:
+    1. Start from the first item
+    2. Visit the index it points to
+        When you follow an instruction add one to that instruction
+    3. Repeat until the index pointed to does not exist in the list
+    4. Count how many steps were taken
+    """
+
+    def __init__(self, instructions, offset=None):
+        self.instructions = instructions
+        self.curr_instruction = 0
+        self.steps = 0
+        self.in_maze = True
+        self.offset = len(instructions) if offset is None else offset
+
+    def do_instruction(self):
+        try:
+            next_instruction = self.instructions[self.curr_instruction]
+        except IndexError:
+            self.in_maze = False
+            return None
+        else:
+            self.steps += 1
+
+            if next_instruction < self.offset:
+                self.instructions[self.curr_instruction] += 1
+            else:
+                self.instructions[self.curr_instruction] -= 1
+
+            self.curr_instruction += next_instruction
+
+    def propagate(self):
+        while self.in_maze:
+            self.do_instruction()
+        return self.steps
+
+
+with open(dir + 'wacky_instructions.txt') as infile:
+    instructions = infile.readlines()
+    instructions = [int(instruction.strip()) for instruction in instructions]
+    blah = WackyInstructions(instructions)
+    print(blah.propagate())
 
 
 if __name__ == '__main__':

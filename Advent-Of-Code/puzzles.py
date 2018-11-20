@@ -1,6 +1,6 @@
 import numpy as np
-from itertools import chain
-from Helpers.tools import get_window, ceil_odd
+from itertools import chain, cycle
+from Helpers.tools import get_window, ceil_odd, odd_number_gen, even_number_gen, get_neighbouring_indices
 
 
 def sum_similar(digit_seq, offset=1):
@@ -11,6 +11,7 @@ def sum_similar(digit_seq, offset=1):
     For the last digit the first digit is used to check for a match.
 
     :param digit_seq: A sequence of digits
+    :param offset: The distance on the iterable where to check for a match
     :return: Total of the sum where the digit matches the next digit in the sequence
 
     >>> sum_similar('1122')
@@ -55,6 +56,7 @@ def sum_answer_if_perfect_divisible(filepath, sep='\t'):
     :param filepath:
     :param sep:
     :return:
+
     """
 
     def get_sum(line):
@@ -104,24 +106,109 @@ def get_distance(n):
     if n == 1:
         return 0
 
-    nearest_odd = ceil_odd(np.sqrt(n))
+    spiral_size = ceil_odd(np.sqrt(n))
 
     # Index of the spiral the n'th term appears
-    first_dimension_dist = nearest_odd // 2
+    first_dimension_dist = spiral_size // 2
 
     # Get distance from the center term along the spiral
-    max_n_in_nth_spiral = nearest_odd ** 2
-    min_n_in_nth_spiral = (nearest_odd - 2) ** 2 + 1
+    max_n_in_nth_spiral = spiral_size ** 2
+    min_n_in_nth_spiral = (spiral_size - 2) ** 2 + 1
     all_n_in_nth_spiral = [max_n_in_nth_spiral] + list(range(min_n_in_nth_spiral, max_n_in_nth_spiral + 1))
 
-    for column in get_window(all_n_in_nth_spiral, int(nearest_odd), 1):
+    for column in get_window(all_n_in_nth_spiral, int(spiral_size), 1):
         try:
             index = column.index(n)
-            second_dimension_dist = abs(index - (nearest_odd // 2))
+            second_dimension_dist = abs(index - (spiral_size // 2))
         except ValueError:
             continue
 
     return int(first_dimension_dist + second_dimension_dist)
+
+
+class Spiral():
+
+    def __init__(self, n):
+        self.n = n
+        self.spiral_size = ceil_odd(np.sqrt(self.n))
+        self.center_idx = self.spiral_size // 2
+        self.spiral = self.make_spiral()
+
+    def make_spiral(self):
+        return np.zeros(shape=(self.spiral_size, self.spiral_size))
+
+    def get_next_index(self, dimension='row'):
+        """
+                The spiral starts at the center of the matrix and moves first right then up then left then down
+                The amount to move in each direction is a sequence:
+                    if Right or Up: the sequence of odd numbers
+                    if Left or Down: the sequence of even numbers
+
+                To determine the next index, we just find the next direction movement.
+
+                If we are interested in the row index only Up and Down movements matter:
+                    if Up: Add -1 from the current index
+                    if Down: Add 1 to the current index
+
+                If we are interested in column index only Right and Left movements matter:
+                    if Right: Add 1 to the current index
+                    if Left: Add -1 to the current index
+
+
+                17  16  15  14  13
+                18   5   4   3  12
+                19   6   1   2  11
+                20   7   8   9  10
+                21  22  23---> ...
+
+                :param center_idx:
+                :param dimension:
+                :return:
+                """
+
+        # Create the odd and even number generators to determine step size
+        right, left = odd_number_gen(), even_number_gen()
+        up, down = odd_number_gen(), even_number_gen()
+
+        # Make dictionary to get the next direction value and how much to move in that direction
+        key = ['right', 'up', 'left', 'down']
+        gen = [right, up, left, down]
+        value = [0, -1, 0, 1] if dimension == 'row' else [1, 0, -1, 0]
+        steps_dict = dict(zip(key, zip(gen, value)))
+
+        # Establish order of directions to make spiral Right, Up, Left, Down
+        step_order = cycle(key)
+
+        # Get next index
+        curr_index = self.center_idx
+        yield curr_index
+        while True:
+            next_step = next(step_order)
+            n_steps_gen, step_dir = steps_dict[next_step]
+            n_steps = next(n_steps_gen)
+
+            for _ in range(n_steps):
+                curr_index += step_dir
+                yield curr_index
+
+    def get_max_sum(self, target_sum):
+        # Get next index of spiral to fill
+        row_index_gen = self.get_next_index(dimension='row')
+        col_index_gen = self.get_next_index(dimension='column')
+
+        max_sum = self.spiral.max()
+
+        while max_sum < target_sum:
+            row_index, col_index = next(row_index_gen), next(col_index_gen)
+
+            if row_index == self.center_idx and col_index == self.center_idx:
+                self.spiral[row_index, col_index] = 1
+            else:
+                row_indices, col_indices = get_neighbouring_indices(row_index, col_index, self.spiral.shape)
+                self.spiral[row_index, col_index] = self.spiral[row_indices, col_indices].sum()
+            max_sum = self.spiral.max()
+
+        return int(max_sum)
 
 
 if __name__ == '__main__':

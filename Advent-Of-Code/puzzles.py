@@ -1,9 +1,12 @@
 import numpy as np
-from itertools import chain, cycle, product
+from statistics import mode
+from itertools import chain, cycle
+from collections import namedtuple, defaultdict
 from Helpers.tools import (get_window, ceil_odd, odd_number_gen, even_number_gen,
-                           get_neighbouring_indices, all_unique, is_anagram)
+                           get_neighbouring_indices, all_unique)
 
-dir = '/home/harshil/GithubProjects/Plaython/'
+input_dir = '/home/harshil/GithubProjects/Plaython/'
+
 
 def sum_similar(digit_seq, offset=1):
     """
@@ -271,11 +274,73 @@ class WackyInstructions():
         return self.steps
 
 
-with open(dir + 'wacky_instructions.txt') as infile:
-    instructions = infile.readlines()
-    instructions = [int(instruction.strip()) for instruction in instructions]
-    blah = WackyInstructions(instructions)
-    print(blah.propagate())
+def tower_craze():
+    names = {}
+    Values = namedtuple('Values', ['weight', 'sub_names'])
+
+    all_names = set()
+    all_sub_names = set()
+
+    with open(input_dir + 'tower_input.txt') as infile:
+        for line in infile:
+            line_list = line.strip().split()
+
+            name = line_list[0]
+            weight = int(line_list[1].replace('(', '').replace(')', ''))
+
+            if '->' in line:
+                sub_names = line.strip().split('-> ')[-1].split(', ')
+                _ = [all_sub_names.add(sub_name) for sub_name in sub_names]
+            else:
+                sub_names = None
+
+            names[name] = Values(weight, sub_names)
+
+            all_names.add(name)
+
+        def get_weights(name):
+            if names[name].sub_names is None:
+                return names[name].weight
+            else:
+                return names[name].weight + sum(get_weights(name) for name in names[name].sub_names)
+
+        candidates = []
+        for name, value in names.items():
+
+            if value.sub_names is not None:
+                weight_values = [get_weights(sub_name) for sub_name in value.sub_names]
+                mode_val = mode(weight_values)
+
+                if len(set(weight_values)) > 1:
+                    weights = (name, [(sub_name, get_weights(sub_name)) for sub_name in value.sub_names])
+
+                    for name, val in weights[1]:
+                        if val != mode_val:
+                            offset = mode_val - val
+
+                            candidates.append([name, names[name].weight, names[name].weight + offset])
+
+    return all_names - all_sub_names, candidates
+
+
+def more_wacky_instructions(to_register, to_inc, by, condition):
+    register = defaultdict(int)
+    global_max = 0
+
+    for to_register_i, to_inc, instruction_i, condition_i in zip(to_register, to_inc, by, condition):
+
+        condition_part_1, condition_part_2 = condition_i.split(maxsplit=1)
+        val = register[condition_part_1]
+
+        if eval(f'{val} {condition_part_2}'):
+            if to_inc:
+                register[to_register_i] += instruction_i
+            else:
+                register[to_register_i] -= instruction_i
+
+        global_max = max(global_max, max(register.values()))
+
+    return max(register.values()), global_max
 
 
 if __name__ == '__main__':
